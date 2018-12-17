@@ -54,11 +54,11 @@ class uncompiled_library : public dynamic_library
   public:
     uncompiled_library(const std::string& script) : m_compile_script(script) {}
 
-    void compile(const std::string& filename) 
+    void compile(const std::string& filename)
     {
       std::stringstream commandline;
       commandline << '"' << m_compile_script << "\" " << filename << " " << " 2>&1";
-      
+
       // Execute script.
       FILE* stream = popen(commandline.str().c_str(), "r");
       if (stream == NULL)
@@ -72,14 +72,14 @@ class uncompiled_library : public dynamic_library
       std::string files;
       char buf[1024];
       while(!feof(stream))
-      {        
+      {
         if(fgets(buf, sizeof(buf), stream) != NULL)
         {
           std::string line(buf);
           assert(*line.rbegin() == '\n');
           line.erase(line.size() - 1);
           mCRL2log(mcrl2::log::debug, "uncompiled_library") << "  Read line: " << line;
-          
+
           // Check that reported file exists. If not, produce error message and
           // flush script output to the log.
           if (!mcrl2::utilities::file_exists(line))
@@ -105,13 +105,13 @@ class uncompiled_library : public dynamic_library
             clearerr(stream);
         }
       }
-      
+
       if (ferror(stream))
       {
         pclose(stream);
         throw std::runtime_error("There was a problem reading the output of the compile script.");
       }
-      
+
       pclose(stream);
 
       m_filename = m_tempfiles.back();
@@ -122,7 +122,7 @@ class uncompiled_library : public dynamic_library
       m_tempfiles.clear();
     }
 
-    void cleanup() 
+    void cleanup()
     {
       for(std::list<std::string>::iterator f = m_tempfiles.begin(); f != m_tempfiles.end(); ++f)
       {
@@ -141,7 +141,7 @@ class uncompiled_library : public dynamic_library
 
     virtual ~uncompiled_library()
     {
-#ifndef NDEBUG // In debug mode, the compiled rewriter has not been removed directly after loading, 
+#ifndef NDEBUG // In debug mode, the compiled rewriter has not been removed directly after loading,
                // and we still have to remove it.
       try
       {

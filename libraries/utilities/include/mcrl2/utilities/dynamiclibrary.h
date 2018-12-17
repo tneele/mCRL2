@@ -97,11 +97,11 @@
   }
 #endif
 
-class dynamic_library 
+class dynamic_library
 {
   private:
     library_handle m_library;
-    void load() 
+    void load()
     {
       if (m_library == NULL)
       {
@@ -114,10 +114,10 @@ class dynamic_library
         }
       }
     }
-  
+
   protected:
     std::string m_filename;
-    void unload() 
+    void unload()
     {
       if (m_library)
       {
@@ -130,10 +130,10 @@ class dynamic_library
         m_library = NULL;
       }
     }
-  
+
   public:
     dynamic_library(const std::string& filename = std::string()) : m_library(0), m_filename(filename) {}
-    virtual ~dynamic_library() 
+    virtual ~dynamic_library()
     {
       try
       {
@@ -144,8 +144,8 @@ class dynamic_library
         mCRL2log(mcrl2::log::error) << "Error while unloading dynamic library: " << error.what() << std::endl;
       }
     }
-  
-    library_proc proc_address(const std::string& name) 
+
+    library_proc proc_address(const std::string& name)
     {
       if (m_library == 0)
       {

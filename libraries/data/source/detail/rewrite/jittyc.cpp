@@ -56,18 +56,18 @@ namespace data
 namespace detail
 {
 
-// Some compilers can only deal with a limited number of nested curly brackets. 
+// Some compilers can only deal with a limited number of nested curly brackets.
 // This limit can be increased by using -fbracket-depth=C where C is a new constant
-// value. By default this value C often appears to be 256. But not all compilers 
+// value. By default this value C often appears to be 256. But not all compilers
 // recognize -fbracket-depth=C, making its use unreliable and therefore not advisable.
-// In order to generate the these auxiliary code fragments, we need to recall 
-// what the template and data parameters of the current process are. 
+// In order to generate the these auxiliary code fragments, we need to recall
+// what the template and data parameters of the current process are.
 
 class bracket_level_data
 {
   public:
     const std::size_t MCRL2_BRACKET_NESTING_LEVEL=250;  // Some compilers limit the nesting to 256 brackets.
-                                                        // This guarantees that we will not use more. 
+                                                        // This guarantees that we will not use more.
     std::size_t bracket_nesting_level;
     std::string current_template_parameters;
     std::stack< std::string > current_data_parameters;
@@ -980,7 +980,7 @@ class RewriterCompilingJitty::ImplementTree
         void unindent() { m_indent -= 2; }
         std::size_t reset() { std::size_t old = m_indent; m_indent = 4; return old; }
         void restore(const std::size_t i){ m_indent = i; }
-  
+
         friend
         std::ostream& operator<<(std::ostream& stream, const padding& p)
         {
@@ -1062,7 +1062,7 @@ class RewriterCompilingJitty::ImplementTree
       const application& appl = down_cast<application>(t);
       const std::size_t arity = recursive_number_of_args(appl);
       const data_expression& head = appl.head();
-      
+
       if (!is_function_symbol(get_nested_head(head)))
       {
         return false;
@@ -1576,17 +1576,17 @@ class RewriterCompilingJitty::ImplementTree
    */
 
   void implement_tree(std::ostream& m_stream,
-                      const match_tree& tree, 
-                      std::size_t cur_arg, 
-                      std::size_t parent, 
-                      std::size_t level, 
+                      const match_tree& tree,
+                      std::size_t cur_arg,
+                      std::size_t parent,
+                      std::size_t level,
                       std::size_t cnt,
                       const std::size_t arity,
                       const function_symbol& opid,
-                      bracket_level_data& brackets, 
+                      bracket_level_data& brackets,
                       std::stack<std::string>& auxiliary_code_fragments)
   {
-    /* Some c++ compilers cannot deal with more than 256 nestings of curly braces ({...}). 
+    /* Some c++ compilers cannot deal with more than 256 nestings of curly braces ({...}).
        If too many curly braces are generated, a new method is generated, with as only  purpose
        to avoid too many brackets. The resulting code fragments are stored in auxiliary_code_fragments.
     */
@@ -1594,20 +1594,20 @@ class RewriterCompilingJitty::ImplementTree
     {
       static std::size_t auxiliary_method_name_index=0;
 
-      m_stream << m_padding 
+      m_stream << m_padding
                << "const data_expression& result" << auxiliary_method_name_index << "= auxiliary_function_to_reduce_bracket_nesting" << auxiliary_method_name_index << "("
                << brackets.current_data_arguments.top() << ",this_rewriter);\n";
-      m_stream << m_padding 
+      m_stream << m_padding
                << "if (result" << auxiliary_method_name_index << " != data_expression()) { return result" << auxiliary_method_name_index << "; }\n";
 
       const std::size_t old_indent=m_padding.reset();
       std::stringstream s;
       s << "  template < " << brackets.current_template_parameters << ">\n"
-        << "  static inline data_expression auxiliary_function_to_reduce_bracket_nesting" << auxiliary_method_name_index 
-        << "(" 
-        << brackets.current_data_parameters.top() << (brackets.current_data_parameters.top().empty()?"":", ") << "RewriterCompilingJitty* this_rewriter)\n" 
+        << "  static inline data_expression auxiliary_function_to_reduce_bracket_nesting" << auxiliary_method_name_index
+        << "("
+        << brackets.current_data_parameters.top() << (brackets.current_data_parameters.top().empty()?"":", ") << "RewriterCompilingJitty* this_rewriter)\n"
         << "  {\n";
-      
+
       auxiliary_method_name_index++;
 
       std::size_t old_bracket_nesting_level=brackets.bracket_nesting_level;
@@ -1615,11 +1615,11 @@ class RewriterCompilingJitty::ImplementTree
       implement_tree(s,tree,cur_arg,parent,level,cnt,arity, opid, brackets,auxiliary_code_fragments);
       brackets.bracket_nesting_level=old_bracket_nesting_level;
       s << "    return data_expression(); // This indicates that no result has been calculated;\n";
-      // rewr_function_finish(s, arity, opid); 
+      // rewr_function_finish(s, arity, opid);
       s << "  }\n"
         << "\n";
       m_padding.restore(old_indent);
-      auxiliary_code_fragments.push(s.str());  
+      auxiliary_code_fragments.push(s.str());
       return;
     }
 
@@ -1676,10 +1676,10 @@ class RewriterCompilingJitty::ImplementTree
 
   void implement_treeS(
              std::ostream& m_stream,
-             const match_tree_S& tree, 
-             std::size_t cur_arg, 
-             std::size_t parent, 
-             std::size_t level, 
+             const match_tree_S& tree,
+             std::size_t cur_arg,
+             std::size_t parent,
+             std::size_t level,
              std::size_t cnt,
              const std::size_t arity,
              const function_symbol& opid,
@@ -1690,7 +1690,7 @@ class RewriterCompilingJitty::ImplementTree
     bool reset_current_data_parameters=false;
     if (atermpp::find_if(treeS.subtree(),matches(treeS.target_variable()))!=aterm_appl()) // treeS.target_variable occurs in treeS.subtree
     {
-      const std::string parameters = brackets.current_data_parameters.top(); 
+      const std::string parameters = brackets.current_data_parameters.top();
       brackets.current_data_parameters.push(parameters + (parameters.empty()?"":", ") + "const data_expression& " + (string(treeS.target_variable().name()).c_str() + 1));
       const std::string arguments = brackets.current_data_arguments.top();
       brackets.current_data_arguments.push(arguments + (arguments.empty()?"":", ") + (string(treeS.target_variable().name()).c_str() + 1));
@@ -1725,11 +1725,11 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeM(
-             std::ostream& m_stream, 
-             const match_tree_M& tree, 
-             std::size_t cur_arg, 
-             std::size_t parent, 
-             std::size_t level, 
+             std::ostream& m_stream,
+             const match_tree_M& tree,
+             std::size_t cur_arg,
+             std::size_t parent,
+             std::size_t level,
              std::size_t cnt,
              const std::size_t arity,
              const function_symbol& opid,
@@ -1766,11 +1766,11 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeF(
-             std::ostream& m_stream, 
-             const match_tree_F& tree, 
-             std::size_t cur_arg, 
-             std::size_t parent, 
-             std::size_t level, 
+             std::ostream& m_stream,
+             const match_tree_F& tree,
+             std::size_t cur_arg,
+             std::size_t parent,
+             std::size_t level,
              std::size_t cnt,
              const std::size_t arity,
              const function_symbol& opid,
@@ -1845,9 +1845,9 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeD(
-             std::ostream& m_stream, 
-             const match_tree_D& tree, 
-             std::size_t level, 
+             std::ostream& m_stream,
+             const match_tree_D& tree,
+             std::size_t level,
              std::size_t cnt,
              const std::size_t arity,
              const function_symbol& opid,
@@ -1864,11 +1864,11 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeN(
-             std::ostream& m_stream, 
-             const match_tree_N& tree, 
-             std::size_t cur_arg, 
-             std::size_t parent, 
-             std::size_t level, 
+             std::ostream& m_stream,
+             const match_tree_N& tree,
+             std::size_t cur_arg,
+             std::size_t parent,
+             std::size_t level,
              std::size_t cnt,
              const std::size_t arity,
              const function_symbol& opid,
@@ -1879,11 +1879,11 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeC(
-             std::ostream& m_stream, 
-             const match_tree_C& tree, 
-             std::size_t cur_arg, 
-             std::size_t parent, 
-             std::size_t level, 
+             std::ostream& m_stream,
+             const match_tree_C& tree,
+             std::size_t cur_arg,
+             std::size_t parent,
+             std::size_t level,
              std::size_t cnt,
              const std::size_t arity,
              const function_symbol& opid,
@@ -1917,24 +1917,24 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeR(
-             std::ostream& m_stream, 
-             const match_tree_R& tree, 
-             std::size_t cur_arg, 
+             std::ostream& m_stream,
+             const match_tree_R& tree,
+             std::size_t cur_arg,
              std::size_t level)
   {
     if (level > 0)
     {
       cur_arg = m_stack[2 * level - 1];
     }
-    
+
     m_stream << m_padding << "return ";
     stringstream result_type_string;
     calc_inner_term(m_stream, tree.result(), cur_arg + 1, m_nnfvars, true, result_type_string);
-    m_stream << "; // R1 " << tree.result() << "\n"; 
+    m_stream << "; // R1 " << tree.result() << "\n";
   }
 
   const match_tree& implement_treeC(
-             std::ostream& m_stream, 
+             std::ostream& m_stream,
              const match_tree_C& tree,
              bracket_level_data& brackets)
   {
@@ -1958,8 +1958,8 @@ class RewriterCompilingJitty::ImplementTree
   }
 
   void implement_treeR(
-             std::ostream& m_stream, 
-             const match_tree_R& tree, 
+             std::ostream& m_stream,
+             const match_tree_R& tree,
              std::size_t arity)
   {
     stringstream result_type_string;
@@ -2010,8 +2010,8 @@ public:
   /// \param arity
   ///
   void implement_tree(
-             std::ostream& m_stream, 
-             match_tree tree, 
+             std::ostream& m_stream,
+             match_tree tree,
              const std::size_t arity,
              const function_symbol& opid,
              bracket_level_data& brackets,
@@ -2050,9 +2050,9 @@ public:
   }
 
   void implement_strategy(
-             std::ostream& m_stream, 
-             match_tree_list strat, 
-             std::size_t arity, 
+             std::ostream& m_stream,
+             match_tree_list strat,
+             std::size_t arity,
              const function_symbol& opid,
              bracket_level_data& brackets,
              std::stack<std::string>& auxiliary_code_fragments)
@@ -2072,8 +2072,8 @@ public:
           if (!added_new_parameters_in_brackets)
           {
             added_new_parameters_in_brackets=true;
-            brackets.current_data_parameters.push(brackets.current_data_parameters.top()); 
-            brackets.current_data_arguments.push(brackets.current_data_arguments.top()); 
+            brackets.current_data_parameters.push(brackets.current_data_parameters.top());
+            brackets.current_data_arguments.push(brackets.current_data_arguments.top());
           }
           const std::string& parameters=brackets.current_data_parameters.top();
           brackets.current_data_parameters.top()=parameters + (parameters.empty()?"":", ") + "const data_expression& arg" + to_string(arg);
@@ -2249,7 +2249,7 @@ public:
       std::size_t used_arguments = 0;
       m_stream << rewr_function_finish_term(arity, ss.str(), down_cast<function_sort>(opid.sort()), used_arguments) << ";\n";
       assert(used_arguments == arity);
-    } 
+    }
   }
 
   void rewr_function_signature(std::ostream& m_stream, std::size_t index, std::size_t arity, bracket_level_data& brackets)
@@ -2261,7 +2261,7 @@ public:
       std::stringstream s;
       for (std::size_t i = 0; i < arity; ++i)
       {
-        
+
         s << (i == 0 ? "" : ", ")
                  << "class DATA_EXPR" << i;
       }
@@ -2287,9 +2287,9 @@ public:
   }
 
   void rewr_function_implementation(
-             std::ostream& m_stream, 
-             const data::function_symbol& func, 
-             std::size_t arity, 
+             std::ostream& m_stream,
+             const data::function_symbol& func,
+             std::size_t arity,
              match_tree_list strategy)
 
   {
@@ -2507,12 +2507,12 @@ void RewriterCompilingJitty::generate_code(const std::string& filename)
 {
   std::ofstream cpp_file(filename);
   std::stringstream rewr_code;
-  // arity_bound is one larger than the maximal arity. 
+  // arity_bound is one larger than the maximal arity.
   arity_bound = 1+std::max(calc_max_arity(m_data_specification_for_enumeration.constructors()),
                            calc_max_arity(m_data_specification_for_enumeration.mappings()));
 
   // - Store all used function symbols in a vector
-  std::vector<function_symbol> function_symbols; 
+  std::vector<function_symbol> function_symbols;
   filter_function_symbols(m_data_specification_for_enumeration.constructors(), function_symbols, data_equation_selector);
   filter_function_symbols(m_data_specification_for_enumeration.mappings(), function_symbols, data_equation_selector);
 

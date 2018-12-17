@@ -44,7 +44,7 @@ static data_expression local_rewrite(const REWRITE_TERM& t)
 static const data_expression& local_rewrite(const data_expression& t)
 {
   return t;
-} 
+}
 
 //
 // Forward declarations
@@ -97,8 +97,8 @@ class delayed_abstraction
     const TERM_TO_BE_REWRITTEN& m_body;
     RewriterCompilingJitty* this_rewriter;
   public:
-    delayed_abstraction(const binder_type& binding_operator, 
-                        const variable_list& variables, 
+    delayed_abstraction(const binder_type& binding_operator,
+                        const variable_list& variables,
                         const TERM_TO_BE_REWRITTEN& body,
                         RewriterCompilingJitty* tr)
        : m_binding_operator(binding_operator), m_variables(variables), m_body(body), this_rewriter(tr)
@@ -118,7 +118,7 @@ struct rewrite_functor
 
   rewrite_functor(RewriterCompilingJitty* tr)
    : this_rewriter(tr)
-  {} 
+  {}
 
   data_expression operator()(const data_expression& arg) const
   {
@@ -165,9 +165,9 @@ uintptr_t uint_address(const atermpp::aterm& t)
 //
 
 static inline rewriter_function get_precompiled_rewrite_function(
-             const function_symbol& f, 
-             const std::size_t arity, 
-             const bool arguments_in_normal_form, 
+             const function_symbol& f,
+             const std::size_t arity,
+             const bool arguments_in_normal_form,
              RewriterCompilingJitty* this_rewriter)
 {
   const std::size_t index = get_index(f);
@@ -179,13 +179,13 @@ static inline rewriter_function get_precompiled_rewrite_function(
   if (arguments_in_normal_form)
   {
     assert(this_rewriter -> arity_bound * index + arity<this_rewriter->functions_when_arguments_are_in_normal_form.size());
-    return this_rewriter->functions_when_arguments_are_in_normal_form[this_rewriter->arity_bound * index + arity]; 
+    return this_rewriter->functions_when_arguments_are_in_normal_form[this_rewriter->arity_bound * index + arity];
   }
   assert(this_rewriter->arity_bound * index + arity<this_rewriter->functions_when_arguments_are_not_in_normal_form.size());
   return this_rewriter->functions_when_arguments_are_not_in_normal_form[this_rewriter->arity_bound * index + arity];
 }
 
-static inline 
+static inline
 data_expression rewrite_abstraction_aux(const abstraction& head, const data_expression& a, RewriterCompilingJitty* this_rewriter)
 {
   const binder_type& binder(head.binding_operator());
@@ -258,7 +258,7 @@ data_expression rewrite_appl_aux(const application& t, RewriterCompilingJitty* t
       assert(t1.sort()==result.sort());
       return result;
     }
-    return application(rewrite_aux(head1,false,this_rewriter), t1.begin(), t1.end(), rewrite_functor(this_rewriter)); 
+    return application(rewrite_aux(head1,false,this_rewriter), t1.begin(), t1.end(), rewrite_functor(this_rewriter));
   }
 }
 

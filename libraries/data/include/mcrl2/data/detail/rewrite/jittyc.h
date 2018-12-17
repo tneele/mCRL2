@@ -47,9 +47,9 @@ class normal_form_cache
   public:
     normal_form_cache(RewriterJitty& rewriter)
       : m_rewriter(rewriter)
-    { 
+    {
     }
-  
+
   ///
   /// \brief insert stores the normal form of t in the cache, and returns a string
   ///        that is a C++ representation of the stored normal form. This string can
@@ -90,8 +90,8 @@ class RewriterCompilingJitty: public Rewriter
 
     data_expression rewrite(const data_expression& term, substitution_type& sigma);
 
-    // The variable global_sigma is a temporary store to maintain the substitution 
-    // sigma during rewriting a single term. It is not a variable for public use. 
+    // The variable global_sigma is a temporary store to maintain the substitution
+    // sigma during rewriting a single term. It is not a variable for public use.
     substitution_type *global_sigma;
     // The data structures below are used to store the variable lists2
     // that are used in the compiling rewriter in forall, where and exists.
@@ -110,9 +110,9 @@ class RewriterCompilingJitty: public Rewriter
     // to prevent double occurrences in the vector.
     std::vector<variable> rewriter_bound_variables;
     std::map <variable, std::size_t> variable_indices0;
-   
+
     // The following values are used to locate rewrite functions in the tables of
-    // precompiled functions. 
+    // precompiled functions.
     //   arity_bound -- The maximum occurring arity + 1
     //   index_bound -- The maximum occurring index + 1
     std::size_t arity_bound;
@@ -125,7 +125,7 @@ class RewriterCompilingJitty: public Rewriter
     }
 
     // The two arrays below are intended to contain the precompiled functions used
-    // for rewriting. They are used to find the relevant compiled rewriting code quickly. 
+    // for rewriting. They are used to find the relevant compiled rewriting code quickly.
     std::vector<rewriter_function> functions_when_arguments_are_not_in_normal_form;
     std::vector<rewriter_function> functions_when_arguments_are_in_normal_form;
 
@@ -135,7 +135,7 @@ class RewriterCompilingJitty: public Rewriter
   private:
     class ImplementTree;
     friend class ImplementTree;
-    
+
     RewriterJitty jitty_rewriter;
     std::set < data_equation > rewrite_rules;
     bool made_files;
