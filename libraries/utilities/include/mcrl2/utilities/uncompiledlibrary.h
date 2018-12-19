@@ -37,6 +37,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <list>
 #include <string>
 #include <sstream>
@@ -78,7 +79,7 @@ class uncompiled_library : public dynamic_library
           std::string line(buf);
           assert(*line.rbegin() == '\n');
           line.erase(line.size() - 1);
-          mCRL2log(mcrl2::log::debug, "uncompiled_library") << "  Read line: " << line;
+          mCRL2log(mcrl2::log::debug, "uncompiled_library") << "  Read line from compile script: " << line << std::endl;
 
           // Check that reported file exists. If not, produce error message and
           // flush script output to the log.
@@ -115,6 +116,20 @@ class uncompiled_library : public dynamic_library
       pclose(stream);
 
       m_filename = m_tempfiles.back();
+    }
+
+    void move_library(const std::string& new_location)
+    {
+      if(!m_filename.empty())
+      {
+        if(std::rename(m_filename.c_str(), new_location.c_str()) < 0)
+        {
+          throw mcrl2::runtime_error("There was a problem moving the object file " + std::string(std::strerror(errno)));
+        }
+        m_tempfiles.remove(m_filename);
+        m_tempfiles.push_back(new_location);
+        m_filename = new_location;
+      }
     }
 
     void leave_files()

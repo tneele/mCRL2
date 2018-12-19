@@ -1148,7 +1148,7 @@ class RewriterCompilingJitty::ImplementTree
     const bool nf = opid_is_nf(f, arity);
     if (rewr || nf)
     {
-      s << m_rewriter.m_nf_cache.insert(f);
+      s << m_rewriter.m_nf_cache.insert_normal_form(f);
       result_type << "data_expression";
       return;
     }
@@ -1511,7 +1511,7 @@ class RewriterCompilingJitty::ImplementTree
   {
     if (find_free_variables(t).empty())
     {
-      s << m_rewriter.m_nf_cache.insert(t);
+      s << m_rewriter.m_nf_cache.insert_normal_form(t);
       result_type << "data_expression";
       return;
     }
@@ -1778,20 +1778,20 @@ class RewriterCompilingJitty::ImplementTree
              std::stack<std::string>& auxiliary_code_fragments)
   {
     bool reset_current_data_parameters=false;
-    const void* func = (void*)(atermpp::detail::address(tree.function()));
+    std::string function_pp = m_rewriter.m_nf_cache.insert_function_symbol(tree.function());
     m_stream << m_padding;
     brackets.bracket_nesting_level++;
     if (level == 0)
     {
       if (!is_function_sort(tree.function().sort()))
       {
-        m_stream << "if (uint_address(arg" << cur_arg << ") == " << func << ") // F1\n" << m_padding
+        m_stream << "if (uint_address(arg" << cur_arg << ") == " << function_pp << ") // F1\n" << m_padding
                  << "{\n";
       }
       else
       {
         m_stream << "if (uint_address((is_function_symbol(arg" << cur_arg <<  ") ? arg" << cur_arg << " : arg" << cur_arg << "[0])) == "
-                 << func << ") // F1\n" << m_padding
+                 << function_pp << ") // F1\n" << m_padding
                  << "{\n";
       }
     }
@@ -1801,7 +1801,7 @@ class RewriterCompilingJitty::ImplementTree
       if (!is_function_sort(tree.function().sort()))
       {
         m_stream << "if (uint_address(" << arg_or_t << parent << "[" << cur_arg << "]) == "
-                 << func << ") // F2a " << tree.function().name() << "\n" << m_padding
+                 << function_pp << ") // F2a " << tree.function().name() << "\n" << m_padding
                  << "{\n" << m_padding
                  << "  const data_expression& t" << cnt << " = down_cast<data_expression>(" << arg_or_t << parent << "[" << cur_arg << "]);\n";
       }
@@ -1809,7 +1809,7 @@ class RewriterCompilingJitty::ImplementTree
       {
         m_stream << "if (is_application_no_check(down_cast<data_expression>(" << arg_or_t << parent << "[" << cur_arg << "])) && "
                  <<     "uint_address(down_cast<data_expression>(" << arg_or_t << parent << "[" << cur_arg << "])[0]) == "
-                 << func << ") // F2b " << tree.function().name() << "\n" << m_padding
+                 << function_pp << ") // F2b " << tree.function().name() << "\n" << m_padding
                  << "{\n" << m_padding
                  << "  const data_expression& t" << cnt << " = down_cast<data_expression>(" << arg_or_t << parent << "[" << cur_arg << "]);\n";
       }
@@ -2240,12 +2240,12 @@ public:
     m_stream << m_padding << "return ";
     if (arity == 0)
     {
-      m_stream << m_rewriter.m_nf_cache.insert(opid) << ";\n";
+      m_stream << m_rewriter.m_nf_cache.insert_normal_form(opid) << ";\n";
     }
     else
     {
       stringstream ss;
-      ss << "atermpp::down_cast<data_expression>(atermpp::aterm(reinterpret_cast<atermpp::detail::_aterm*>(" << (void*)atermpp::detail::address(opid) << ")))";
+      ss << "atermpp::down_cast<data_expression>(atermpp::aterm(reinterpret_cast<atermpp::detail::_aterm*>(" << m_rewriter.m_nf_cache.insert_function_symbol(opid) << ")))";
       std::size_t used_arguments = 0;
       m_stream << rewr_function_finish_term(arity, ss.str(), down_cast<function_sort>(opid.sort()), used_arguments) << ";\n";
       assert(used_arguments == arity);
@@ -2425,13 +2425,13 @@ void RewriterCompilingJitty::CleanupRewriteSystem()
 }
 
 ///
-/// \brief generate_cpp_filename creates a filename that is hopefully unique enough not to cause
+/// \brief generate_filename creates a filename that is hopefully unique enough not to cause
 ///        name clashes when more than one instance of the compiling rewriter run at the same
 ///        time.
 /// \param unique A number that will be incorporated into the filename.
 /// \return A filename that should be used to store the generated C++ code in.
 ///
-static std::string generate_cpp_filename(std::size_t unique)
+static std::string generate_filename(std::size_t unique)
 {
   const char* env_dir = std::getenv("MCRL2_COMPILEDIR");
   std::ostringstream filename;
@@ -2448,7 +2448,7 @@ static std::string generate_cpp_filename(std::size_t unique)
   {
     filedir = "./";
   }
-  filename << filedir << "jittyc_" << getpid() << "_" << unique << ".cpp";
+  filename << filedir << "jittyc_" << getpid() << "_" << unique;
   return filename.str();
 }
 
@@ -2556,8 +2556,24 @@ void RewriterCompilingJitty::generate_code(const std::string& filename)
   rewr_code << "  // We're declaring static members in a struct rather than simple functions in\n"
                "  // the global scope, so that we don't have to worry about forward declarations.\n";
   code_generator.generate_rewr_functions(rewr_code);
-  rewr_code << "};\n"
-               "} // namespace\n";
+  rewr_code << "  // Array that will be initialised with the address of each normal form when the library is loaded.\n"
+            << "  static uintptr_t normal_form_address[" << m_nf_cache.normal_form_size() << "];\n"
+            << "  static uintptr_t function_symbol_address[" << m_nf_cache.function_symbol_size() << "];\n"
+            << "};\n"
+            << "uintptr_t rewr_functions::normal_form_address[" << m_nf_cache.normal_form_size() << "];\n"
+            << "uintptr_t rewr_functions::function_symbol_address[" << m_nf_cache.function_symbol_size() << "];\n"
+            << "} // namespace\n";
+  rewr_code << "void set_the_aterm_addresses_in_a_lookup_table(const std::vector<uintptr_t>& normal_forms, const std::vector<uintptr_t>& function_symbols)\n"
+            << "{\n"
+            << "  for(int i = 0; i < normal_forms.size(); i++)\n"
+            << "  {\n"
+            << "    rewr_functions::normal_form_address[i] = normal_forms[i];\n"
+            << "  }\n"
+            << "  for(int i = 0; i < function_symbols.size(); i++)\n"
+            << "  {\n"
+            << "    rewr_functions::function_symbol_address[i] = function_symbols[i];\n"
+            << "  }\n"
+            << "}\n";
 
   generate_make_appl_functions(cpp_file, arity_bound);
   code_generator.generate_delayed_application_functions(cpp_file);
@@ -2628,7 +2644,7 @@ void RewriterCompilingJitty::BuildRewriteSystem()
     jittyc_eqns[down_cast<function_symbol>(get_nested_head(it->lhs()))].push_front(*it);
   }
 
-  std::string cpp_file = generate_cpp_filename(reinterpret_cast<std::size_t>(this));
+  std::string cpp_file = "jitty.cpp";
   generate_code(cpp_file);
 
   mCRL2log(verbose) << "compiling " << cpp_file << "..." << std::endl;
@@ -2636,6 +2652,7 @@ void RewriterCompilingJitty::BuildRewriteSystem()
   try
   {
     rewriter_so->compile(cpp_file);
+    rewriter_so->move_library(generate_filename(reinterpret_cast<std::size_t>(this)) + ".obj");
   }
   catch(std::runtime_error& e)
   {
@@ -2645,11 +2662,11 @@ void RewriterCompilingJitty::BuildRewriteSystem()
 
   mCRL2log(verbose) << "loading rewriter..." << std::endl;
 
-  bool (*init)(rewriter_interface*, RewriterCompilingJitty* this_rewriter);
+  bool (*init)(rewriter_interface*, RewriterCompilingJitty* this_rewriter, const std::vector<uintptr_t>& normal_forms, const std::vector<uintptr_t>& function_symbols);
   rewriter_interface interface = { mcrl2::utilities::get_toolset_version(), "Unknown error when loading rewriter.", this, NULL, NULL };
   try
   {
-    typedef bool rewrite_function_type(rewriter_interface*, RewriterCompilingJitty*);
+    typedef bool rewrite_function_type(rewriter_interface*, RewriterCompilingJitty*, const std::vector<uintptr_t>&, const std::vector<uintptr_t>&);
     init = reinterpret_cast<rewrite_function_type*>(rewriter_so->proc_address("init"));
   }
   catch(std::runtime_error& e)
@@ -2671,7 +2688,7 @@ void RewriterCompilingJitty::BuildRewriteSystem()
   }
 #endif
 
-  if (!init(&interface,this))
+  if (!init(&interface, this, m_nf_cache.get_normal_form_addresses(), m_nf_cache.get_function_symbol_addresses()))
   {
 #ifndef MCRL2_DISABLE_JITTYC_VERSION_CHECK
     throw mcrl2::runtime_error(std::string("Could not load rewriter: ") + interface.status);

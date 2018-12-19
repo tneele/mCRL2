@@ -30,7 +30,7 @@ using atermpp::down_cast;
 #endif // _MSC_VER
 
 extern "C" {
-  DLLEXPORT bool init(rewriter_interface* i, RewriterCompilingJitty* this_rewriter);
+  DLLEXPORT bool init(rewriter_interface* i, RewriterCompilingJitty* this_rewriter, const std::vector<uintptr_t>& normal_forms, const std::vector<uintptr_t>& function_symbols);
 }
 
 // A rewrite_term is a term that may or may not be in normal form. If the method"
@@ -49,6 +49,7 @@ static const data_expression& local_rewrite(const data_expression& t)
 //
 // Forward declarations
 //
+static void set_the_aterm_addresses_in_a_lookup_table(const std::vector<uintptr_t>& normal_forms, const std::vector<uintptr_t>& function_symbols);
 static void set_the_precompiled_rewrite_functions_in_a_lookup_table(RewriterCompilingJitty* this_rewriter);
 static data_expression rewrite_aux(const data_expression& t, const bool arguments_in_normal_form, RewriterCompilingJitty* this_rewriter);
 static inline data_expression rewrite_abstraction_aux(const abstraction& a, const data_expression& t, RewriterCompilingJitty* this_rewriter);
@@ -338,7 +339,7 @@ void rewrite_cleanup()
 {
 }
 
-bool init(rewriter_interface* i, RewriterCompilingJitty* this_rewriter)
+bool init(rewriter_interface* i, RewriterCompilingJitty* this_rewriter, const std::vector<uintptr_t>& normal_forms, const std::vector<uintptr_t>& function_symbols)
 {
 #ifndef MCRL2_DISABLE_JITTYC_VERSION_CHECK
   if (mcrl2::utilities::MCRL2_VERSION != i->caller_toolset_version)
@@ -351,6 +352,7 @@ bool init(rewriter_interface* i, RewriterCompilingJitty* this_rewriter)
   i->rewrite_cleanup = &rewrite_cleanup;
   // this_rewriter = i->rewriter;
   set_the_precompiled_rewrite_functions_in_a_lookup_table(this_rewriter);
+  set_the_aterm_addresses_in_a_lookup_table(normal_forms, function_symbols);
   i->status = "rewriter loaded successfully.";
   return true;
 }

@@ -11,6 +11,7 @@
 #ifndef __REWR_JITTYC_H
 #define __REWR_JITTYC_H
 
+#include "mcrl2/atermpp/indexed_set.h"
 #include "mcrl2/data/detail/rewrite.h"
 #include "mcrl2/data/data_specification.h"
 #include "mcrl2/data/detail/rewrite/jitty.h"
@@ -43,7 +44,9 @@ class normal_form_cache
 {
   private:
     RewriterJitty& m_rewriter;
-    std::set<data_expression> m_lookup;
+    atermpp::indexed_set<data_expression> m_nf_lookup;
+    atermpp::indexed_set<data_expression> m_fs_lookup;
+
   public:
     normal_form_cache(RewriterJitty& rewriter)
       : m_rewriter(rewriter)
@@ -58,13 +61,54 @@ class normal_form_cache
   /// \param t The term to normalize.
   /// \return A C++ string that evaluates to the cached normal form of t.
   ///
-  std::string insert(const data_expression& t)
+  std::string insert_normal_form(const data_expression& t)
+  {
+    RewriterJitty::substitution_type sigma;
+    std::size_t expression_index = m_nf_lookup.put(m_rewriter(t,sigma)).first;
+    std::stringstream ss;
+    ss << "*reinterpret_cast<const data_expression*>(normal_form_address[" << expression_index << "])";
+    return ss.str();
+  }
+
+  std::string insert_function_symbol(const function_symbol& f)
   {
     std::stringstream ss;
-    RewriterJitty::substitution_type sigma;
-    auto pair = m_lookup.insert(m_rewriter(t, sigma));
-    ss << "*reinterpret_cast<const data_expression*>(" << (void*)&(*pair.first) << ")";
+    ss << "function_symbol_address[" << m_fs_lookup.put(f).first << "]";
     return ss.str();
+  }
+
+  std::vector<uintptr_t> get_normal_form_addresses()
+  {
+    std::vector<uintptr_t> result;
+    result.reserve(normal_form_size());
+    for(std::size_t i = 0; i < normal_form_size(); i++)
+    {
+      // std::cout << "normal_forms[" << i << "] = " << m_nf_lookup.get(i) << " (" << reinterpret_cast<const void*>(&m_nf_lookup.get(i)) << ")" << std::endl;
+      result.push_back(reinterpret_cast<uintptr_t>(&m_nf_lookup.get(i)));
+    }
+    return result;
+  }
+
+  std::vector<uintptr_t> get_function_symbol_addresses()
+  {
+    std::vector<uintptr_t> result;
+    result.reserve(function_symbol_size());
+    for(std::size_t i = 0; i < function_symbol_size(); i++)
+    {
+      // std::cout << "function_symbols[" << i << "] = " << m_fs_lookup.get(i) << " (" << reinterpret_cast<const void*>(atermpp::detail::address(m_fs_lookup.get(i))) << ")" << std::endl;
+      result.push_back(reinterpret_cast<uintptr_t>(atermpp::detail::address(m_fs_lookup.get(i))));
+    }
+    return result;
+  }
+
+  std::size_t normal_form_size()
+  {
+    return m_nf_lookup.size();
+  }
+
+  std::size_t function_symbol_size()
+  {
+    return m_fs_lookup.size();
   }
 
   ///
@@ -73,7 +117,8 @@ class normal_form_cache
   ///
   void clear()
   {
-    m_lookup.clear();
+    m_nf_lookup.clear();
+    m_fs_lookup.clear();
   }
 };
 
